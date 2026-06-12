@@ -1,29 +1,14 @@
 package utils
 
-import static com.kms.katalon.core.checkpoint.CheckpointFactory.findCheckpoint
-import static com.kms.katalon.core.testcase.TestCaseFactory.findTestCase
-import static com.kms.katalon.core.testdata.TestDataFactory.findTestData
-import static com.kms.katalon.core.testobject.ObjectRepository.findTestObject
-import static com.kms.katalon.core.testobject.ObjectRepository.findWindowsObject
-
-import com.kms.katalon.core.annotation.Keyword
-import com.kms.katalon.core.checkpoint.Checkpoint
-import com.kms.katalon.core.cucumber.keyword.CucumberBuiltinKeywords as CucumberKW
-import com.kms.katalon.core.mobile.keyword.MobileBuiltInKeywords as Mobile
-import com.kms.katalon.core.model.FailureHandling
-import com.kms.katalon.core.testcase.TestCase
-import com.kms.katalon.core.testdata.TestData
-import com.kms.katalon.core.testobject.TestObject
-import com.kms.katalon.core.webservice.keyword.WSBuiltInKeywords as WS
-import com.kms.katalon.core.webui.keyword.WebUiBuiltInKeywords as WebUI
-import com.kms.katalon.core.windows.keyword.WindowsBuiltinKeywords as Windows
-
-import utils.*
-
-import groovy.json.JsonSlurper
 import java.text.SimpleDateFormat
+import java.io.FileReader
+import java.math.BigDecimal
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 
 public class EmployeeReader {
+	private static final String DEFAULT_DATE_FORMAT = "dd/MM/yyyy"
+	
 	static List<Employee> readEmployeesFromExcel(String filePath, String sheetName) {
 		
 		ExcelHelper excel = new ExcelHelper(filePath, sheetName)
@@ -66,7 +51,7 @@ public class EmployeeReader {
 		def jsonSlurper = new JsonSlurper()
 		def data = jsonSlurper.parse(file)
 	
-		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy")
+		SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_FORMAT)
 	
 		List<Employee> employees = []
 	
@@ -110,20 +95,117 @@ public class EmployeeReader {
 	
 			// Split CSV (simple version)
 			String[] tokens = line.split(",")
+			
+			// Build header map
+			String[] headers = lines[0].split(",")
+			Map<String, Integer> headerMap = [:]
+		
+			headers.eachWithIndex { header, index ->
+				headerMap.put(
+					header.replaceAll('"', '').trim(),
+					index
+				)
+			}
 	
 			Employee employee = new Employee(
-				tokens[0].replaceAll('"', '').trim(),              // name
-				tokens[1].replaceAll('"', '').trim(),              // position
-				tokens[2].replaceAll('"', '').trim(),              // office
-				tokens[3].trim() as Integer,                       // age
-				tokens[4] ? new SimpleDateFormat("dd/MM/yyyy")
-							.parse(tokens[4].replaceAll('"','').trim()) : null,
-				new BigDecimal(tokens[5].trim())                   // salary
-			)
+	            tokens[headerMap["Name"]].replaceAll('"', '').trim(),
+	            tokens[headerMap["Position"]].replaceAll('"', '').trim(),
+	            tokens[headerMap["Office"]].replaceAll('"', '').trim(),
+	            tokens[headerMap["Age"]].trim() as Integer,
+	            tokens[headerMap["StartDate"]] ?
+	                new SimpleDateFormat("dd/MM/yyyy").parse(
+	                    tokens[headerMap["StartDate"]]
+	                        .replaceAll('"', '')
+	                        .trim()
+	                ) : null,
+	            new BigDecimal(
+	                tokens[headerMap["salary"]]
+	                    .replaceAll('"', '')
+	                    .trim()
+	            )
+	        )
+
 	
 			employees.add(employee)
 		}
 	
 		return employees
+	}
+	
+	/**
+	 * Export Employee list with formatted date
+	 */
+	static void exportEmployeesInJson(List employees, String filePath) {
+
+		SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_FORMAT)
+
+		def exportData = employees.collect { emp ->
+			return [
+				name          : emp.name,
+				position      : emp.position,
+				office        : emp.office,
+				age           : emp.age,
+				startDate     : emp.startDate ? sdf.format(emp.startDate) : null,
+				salaryInDollar: emp.salaryInDollar
+			]
+		}
+
+		String json = JsonOutput.prettyPrint(
+			JsonOutput.toJson(exportData)
+		)
+
+		FileWriter.writeFile(filePath, json)
+	}
+	
+	static void exportUsdVndInJson(String filePath, BigDecimal usd, BigDecimal vnd) {
+		
+		def data = [
+			USD: usd,
+			VND: vnd
+		]
+	
+		String json = JsonOutput.prettyPrint(
+			JsonOutput.toJson(data)
+		)
+	
+		FileWriter.writeFile(filePath, json)
+	}
+	
+	static void exportEmployeesInCsv(String filePath, List<Employee> employees) {
+		
+		StringBuilder sb = new StringBuilder()
+	
+		// Header
+		sb.append("Name,Position,Office,Age,StartDate,Salary\n")
+	
+		SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_FORMAT)
+	
+		employees.each { emp ->
+	
+			String startDate =
+				emp.startDate ? sdf.format(emp.startDate) : ""
+	
+			sb.append("${emp.name},")
+			  .append("${emp.position},")
+			  .append("${emp.office},")
+			  .append("${emp.age},")
+			  .append("${startDate},")
+			  .append("${emp.salaryInDollar}")
+			  .append("\n")
+		}
+	
+		FileWriter.writeFile(filePath, sb.toString())
+	}
+	
+	static void exportUsdVndInCsv(String filePath, BigDecimal usd, BigDecimal vnd) {
+		
+		StringBuilder sb = new StringBuilder()
+	
+		// Header
+		sb.append("USD, VND\n")
+			
+		sb.append("${usd},${vnd}")
+	
+		FileWriter.writeFile(filePath, sb.toString())
 	}
 }
