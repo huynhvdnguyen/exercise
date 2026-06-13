@@ -1,8 +1,6 @@
 package utils
 
-import java.text.SimpleDateFormat
-import java.io.FileReader
-import java.math.BigDecimal
+import java.time.format.DateTimeFormatter
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
@@ -11,7 +9,7 @@ public class EmployeeReader {
 	
 	static List<Employee> readEmployeesFromExcel(String filePath, String sheetName) {
 		
-		ExcelHelper excel = new ExcelHelper(filePath, sheetName)
+		ExcelHelper excel = new ExcelHper(filePath, sheetName)
 	
 		List<Employee> employees = []
 	
@@ -21,17 +19,31 @@ public class EmployeeReader {
 	
 			// Skip header row (row 0)
 			for (int row = 1; row <= lastRow; row++) {
+				String name = excel.getCellValue(row, "Name")?.toString()?.trim()
+	            String position = excel.getCellValue(row, "Position")?.toString()?.trim()
+	            String office = excel.getCellValue(row, "Office")?.toString()?.trim()
+	            String startDate = excel.getCellValue(row, "Start Date")?.toString()?.trim()
 	
-				Employee employee = new Employee(
-					excel.getCellValue(row, "Name") as String,
-					excel.getCellValue(row, "Position") as String,
-					excel.getCellValue(row, "Office") as String,
-					(excel.getCellValue(row, "Age") as Double).intValue(),
-					excel.getCellValue(row, "Start Date"),
-					BigDecimal.valueOf(excel.getCellValue(row, "Salary") as Double)
-				)
+	            Integer age = null
+	            def ageValue = excel.getCellValue(row, "Age")
+	            if (ageValue != null) {
+	                age = (ageValue as Number).intValue()
+	            }
 	
-				employees.add(employee)
+	            BigDecimal salary = null
+	            def salaryValue = excel.getCellValue(row, "Salary")
+	            if (salaryValue != null) {
+	                salary = BigDecimal.valueOf((salaryValue as Number).doubleValue())
+	            }
+	
+	            employees.add(new Employee(
+	                name,
+	                position,
+	                office,
+	                age,
+	                startDate,
+	                salary
+	            ))
 			}
 		} finally {
 			excel.close()
@@ -51,7 +63,7 @@ public class EmployeeReader {
 		def jsonSlurper = new JsonSlurper()
 		def data = jsonSlurper.parse(file)
 	
-		SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_FORMAT)
+		DateTimeFormatter sdf = new DateTimeFormatter(DEFAULT_DATE_FORMAT)
 	
 		List<Employee> employees = []
 	
@@ -113,13 +125,13 @@ public class EmployeeReader {
 	            tokens[headerMap["Office"]].replaceAll('"', '').trim(),
 	            tokens[headerMap["Age"]].trim() as Integer,
 	            tokens[headerMap["StartDate"]] ?
-	                new SimpleDateFormat("dd/MM/yyyy").parse(
+	                new DateTimeFormatter(DEFAULT_DATE_FORMAT).parse(
 	                    tokens[headerMap["StartDate"]]
 	                        .replaceAll('"', '')
 	                        .trim()
 	                ) : null,
 	            new BigDecimal(
-	                tokens[headerMap["salary"]]
+	                tokens[headerMap["Salary"]]
 	                    .replaceAll('"', '')
 	                    .trim()
 	            )
@@ -137,7 +149,7 @@ public class EmployeeReader {
 	 */
 	static void exportEmployeesInJson(List employees, String filePath) {
 
-		SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_FORMAT)
+		DateTimeFormatter sdf = new DateTimeFormatter(DEFAULT_DATE_FORMAT)
 
 		def exportData = employees.collect { emp ->
 			return [
@@ -178,7 +190,7 @@ public class EmployeeReader {
 		// Header
 		sb.append("Name,Position,Office,Age,StartDate,Salary\n")
 	
-		SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_FORMAT)
+		DateTimeFormatter sdf = new DateTimeFormatter(DEFAULT_DATE_FORMAT)
 	
 		employees.each { emp ->
 	

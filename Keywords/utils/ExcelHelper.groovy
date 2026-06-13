@@ -27,7 +27,8 @@ public class ExcelHelper {
 		this.sheet = this.workbook.getSheet(sheetName)
 
 		if (this.sheet == null) {
-			throw new Exception("Sheet '${sheetName}' not found.")
+			fis.close()
+			throw new IllegalArgumentException("Sheet '${sheetName}' not found.")
 		}
 		
 		this.formulaEvaluator = this.workbook.getCreationHelper().createFormulaEvaluator()
