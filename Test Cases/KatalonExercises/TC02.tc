@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description></description>
+   <name>TC02</name>
+   <tag></tag>
+   <comment></comment>
+   <recordOption>OTHER</recordOption>
+   <testCaseGuid>5098117d-09a6-4b9f-83b7-a00f22787c46</testCaseGuid>
+   <variableLinks>
+      <testDataLinkId></testDataLinkId>
+      <type>DEFAULT</type>
+      <value></value>
+      <variableId>701d102d-c571-46a4-a362-e285ef643757</variableId>
+   </variableLinks>
+   <variable>
+      <defaultValue>'&quot;https://automationexercise.com&quot;'</defaultValue>
+      <description></description>
+      <id>701d102d-c571-46a4-a362-e285ef643757</id>
+      <masked>false</masked>
+      <name>url</name>
+   </variable>
+</TestCaseEntity>
